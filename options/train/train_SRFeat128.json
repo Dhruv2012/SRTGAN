@@ -1,0 +1,66 @@
+{
+  "name": "SRFeat_PSNR_x4_DIV2K_128" //  please remove "debug_" during training
+  , "use_tb_logger": true
+  , "model":"sr"
+  , "scale": 4
+  , "gpu_ids": [0]
+
+  , "datasets": {
+    "train": {
+      "name": "DIV2K"
+      , "mode": "LRHR"
+      , "dataroot_HR": "/media/dl/DL/Other/dataset/DIV2K800_HR.lmdb"
+      , "dataroot_LR": "/media/dl/DL/Other/dataset/DIV2K800_LR.lmdb"
+      , "subset_file": null
+      , "use_shuffle": true
+      , "n_workers": 8
+      , "batch_size": 16
+      , "HR_size": 192 // 128 | 192
+      , "use_flip": true
+      , "use_rot": true
+    }
+    , "val": {
+      "name": "val_set5"
+      , "mode": "LRHR"
+      , "dataroot_HR": "/media/dl/DL/Other/dataset/Set5/HR"
+      , "dataroot_LR": "/media/dl/DL/Other/dataset/Set5/LR"
+    }
+  }
+
+  , "path": {
+    "root": "/media/dl/DL/Kalpesh/ESRGAN_Kalpesh"
+    //"resume_state": "/media/ml/Data Disk/ESRGAN/experiments/001_RRDB_PSNR_x4_DIV2K_archived_190628-084119/training_state/795000.state"
+    , "pretrain_model_G": null
+  }
+
+  , "network_G": {
+    "which_model_G": "srfeat_gen" // RRDB_net | sr_resnet | srfeat_gen
+    , "norm_type": "batch"
+    , "mode": "CNA"
+    , "nf": 128
+    , "nb": 16
+    , "in_nc": 3
+    , "out_nc": 3
+    , "gc": 32
+    , "group": 1
+  }
+
+  , "train": {
+    "lr_G": 2e-4
+    , "lr_scheme": "MultiStepLR"
+    , "lr_steps": [200000, 400000, 600000, 800000]
+    , "lr_gamma": 0.5
+
+    , "pixel_criterion": "l1"
+    , "pixel_weight": 1.0
+    , "val_freq": 5e3
+
+    , "manual_seed": 0
+    , "niter": 1000000
+  }
+
+  , "logger": {
+    "print_freq": 500
+    , "save_checkpoint_freq": 5e3
+  }
+}
