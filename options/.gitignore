@@ -1,0 +1,7 @@
+#Ignore datasets and model files
+./experiments
+./HR
+./LR
+./valX
+./valY
+/*.zip

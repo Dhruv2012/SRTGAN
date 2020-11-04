@@ -1,7 +1,7 @@
-./HR
-./LR
-./experiments
-./*.zip
-./G:
-./valX
-./valY
+HR/
+LR/
+experiments/
+*.zip
+G:/
+valX/
+valY/
