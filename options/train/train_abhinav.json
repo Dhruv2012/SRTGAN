@@ -15,7 +15,7 @@
       , "subset_file": null
       , "use_shuffle": true
       , "n_workers": 8
-      , "batch_size": 32
+      , "batch_size": 16
       , "HR_size": 192
       , "use_flip": true
       , "use_rot": true
@@ -64,7 +64,7 @@
     , "lr_gamma": 0.5
 
     , "pixel_criterion": "l1"
-    , "pixel_weight": 0
+    , "pixel_weight": 1e-3
     , "feature_criterion": "l2"
     , "feature_weight": 1e-1
     , "gan_type": "lsgan"
@@ -72,7 +72,7 @@
 
     , "manual_seed": 0
     , "niter": 500000
-    , "val_freq": 500
+    , "val_freq": 1000
   }
 
   , "logger": {

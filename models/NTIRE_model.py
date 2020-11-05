@@ -130,9 +130,9 @@ class NTIRE_model(BaseModel):
 
         l_g_total = 0
         
-        #if(self.l_pix_w > 0):
-        #    l_g_pix = self.l_pix_w * self.cri_pix(self.SR, n1(self.var_L))
-        #    l_g_total += l_g_pix
+        if(self.l_pix_w > 0):
+           l_g_pix = self.l_pix_w * self.cri_pix(self.SR, n1(self.var_L))
+           l_g_total += l_g_pix
 
         l_g_percep = self.l_fea_w * self.cri_fea(self.netF(n1(self.var_L.detach())), self.netF(self.SR.detach()))
         l_g_total += l_g_percep
@@ -177,6 +177,7 @@ class NTIRE_model(BaseModel):
         # set log
         self.log_dict['l_g_percep'] = l_g_percep.item()
         self.log_dict['l_g_d'] = l_g_dis.item()
+        self.log_dict['l_g_pix'] = l_g_pix.item()
         # self.log_dict['l_g_tv'] = l_g_tv.item()
         # self.log_dict['l_d_kl'] = loss_kl.item()
 
