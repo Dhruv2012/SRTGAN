@@ -128,6 +128,9 @@ class ICPR_model(BaseModel):
 
         #l_g_dis = self.l_gan_w * self.cri_gan(self.SR_D, True)
         l_g_total += l_g_gan
+
+        #sr_g= (torch.pow((self.SR[:, :, 1:, :-1] - self.SR[:, :, 1:, 1:]),2) + torch.pow((self.SR[:, :, :-1, 1:] - self.SR[:, :, 1:, 1:]),2)) / (0.8)**2
+        #l_grad = 2e-7 * torch.sum(torch.min(sr_g,torch.ones_like(sr_g).to(self.device)))
         
         l_g_vae = self.weight_D * self.cri_pix(self.HR_Encoded, self.SR_Encoded)
         l_g_total += l_g_vae

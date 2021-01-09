@@ -33,12 +33,10 @@ class RRDBNet(nn.Module):
             act_type='leakyrelu', mode='CNA', upsample_mode='upconv'):
         super(RRDBNet, self).__init__()
         n_upscale = int(math.log(upscale, 2))
-        ks=5
+        ks=3
         fea_conv = B.conv_block(in_nc, nf, kernel_size=ks, norm_type=None, act_type=None)
-        rb_blocks = [B.RRDB(nf, kernel_size=ks, gc=32, stride=1, bias=True, pad_type='zero', \
-            norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(int(nb*0.5))]
-        rb_blocks = [B.RRDB(nf, kernel_size=ks-2, gc=32, stride=1, bias=True, pad_type='zero', \
-            norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(int(nb*0.5))]
+        rb_blocks1 = [B.RRDB(nf, kernel_size=ks, gc=32, stride=1, bias=True, pad_type='zero', \
+            norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(nb)]
         LR_conv = B.conv_block(nf, nf, kernel_size=ks, norm_type=norm_type, act_type=None, mode=mode)
 
         if upsample_mode == 'upconv':
@@ -54,18 +52,22 @@ class RRDBNet(nn.Module):
         HR_conv0 = B.conv_block(nf, nf, kernel_size=3, norm_type=None, act_type=act_type)
         HR_conv1 = B.conv_block(nf, out_nc, kernel_size=3, norm_type=None, act_type=None)
         self.n1 = torch.nn.Upsample(scale_factor=4)
-        
-        self.model = B.sequential(fea_conv, B.ShortcutBlock(B.sequential(*rb_blocks, LR_conv)),\
-            *upsampler, HR_conv0, HR_conv1)
 
-        skip_resblock = B.ResNetBlock(in_nc,out_nc)#res defination
-        self.skip = B.sequential(skip_resblock)
+        # rb_blocks2 = [B.RRDB(nf, kernel_size=ks-2, gc=32, stride=1, bias=True, pad_type='zero', \
+        #     norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(int(nb*0.5))]
+        # HR_conv = B.conv_block(nf, nf, kernel_size=ks-2, norm_type=norm_type, act_type=None, mode=mode)
+        
+        self.model = B.sequential(fea_conv, B.ShortcutBlock(B.sequential(*rb_blocks1, LR_conv)),\
+            *upsampler,HR_conv0, HR_conv1)
+
+        # skip_resblock = B.ResNetBlock(in_nc,out_nc)#res defination
+        # self.skip = B.sequential(skip_resblock)
 
         
     def forward(self, x):
         
         x = self.model(x)+self.n1(x) 
-        x = self.skip(x)
+        # x = self.skip(x)
         return x
         
 class RRDBNet2(nn.Module):
@@ -120,6 +122,7 @@ class DegNet(nn.Module):
 
     def forward(self, x):
         x = self.model(x)
+
         return x
 
 #ruk jaa
@@ -156,7 +159,7 @@ class Discriminator(nn.Module):
 
         self.gap = nn.AdaptiveAvgPool2d((1,1))
         self.classifier = nn.Sequential(
-            nn.Linear(base_nf*8, 512), nn.LeakyReLU(0.2, True), nn.Linear(512, out_feat))
+            nn.Linear(base_nf*8, 512),nn.Dropout(), nn.LeakyReLU(0.2, True), nn.Linear(512, out_feat), nn.Sigmoid()) #add ddropout????????
 
     def forward(self, x):
         x = self.gap(self.features(x))
@@ -205,13 +208,62 @@ class NLayerDiscriminator(nn.Module):
             nn.LeakyReLU(0.2, True)
         ]
 
-        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
+        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw),nn.Sigmoid()]  # output 1 channel prediction map
         self.model = nn.Sequential(*sequence)
 
     def forward(self, input):
         """Standard forward."""
         return self.model(input)
 
+
+
+
+class NLayerDiscriminatorEdge(nn.Module):
+    """Defines a PatchGAN discriminator"""
+
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
+        """Construct a PatchGAN discriminator
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            ndf (int)       -- the number of filters in the last conv layer
+            n_layers (int)  -- the number of conv layers in the discriminator
+            norm_layer      -- normalization layer
+        """
+        super(NLayerDiscriminatorEdge, self).__init__()
+        if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        kw = 4
+        padw = 1
+        sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
+        nf_mult = 1
+        nf_mult_prev = 1
+        for n in range(1, n_layers):  # gradually increase the number of filters
+            nf_mult_prev = nf_mult
+            nf_mult = min(2 ** n, 8)
+            sequence += [
+                nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+                norm_layer(ndf * nf_mult),
+                nn.LeakyReLU(0.2, True)
+            ]
+
+        nf_mult_prev = nf_mult
+        nf_mult = min(2 ** n_layers, 8)
+        sequence += [
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=use_bias),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw),nn.Sigmoid()]  # output 1 channel prediction map
+        self.edge_score_layer = B.EdgeScoreNet(3)
+        self.model = nn.Sequential(*sequence)
+
+    def forward(self, input):
+        """Standard forward."""
+        return torch.mul(self.model(input), self.edge_score_layer(input))
 ####################
 # Perceptual Network
 ####################

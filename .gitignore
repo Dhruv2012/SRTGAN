@@ -5,3 +5,5 @@ experiments/
 G:/
 valX/
 valY/
+*.pyc
+*/__pycache__/

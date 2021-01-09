@@ -61,38 +61,55 @@ class LRHRDataset(data.Dataset):
             index2 = index % len(self.paths_LR)
             LR_path = self.paths_LR[index2]
             img_LR = util.read_img(self.LR_env, LR_path)
-        
-
+            
+            index3 = random.randint(0,len(self.paths_LR)-1)
+            randomLR_path = self.paths_LR[index3]
+            img_randomLR = util.read_img(self.LR_env, randomLR_path)
+            img_randomLR = cv2.resize(img_randomLR, (img_LR.shape[1], img_LR.shape[0]))
+            
         if self.opt['phase'] == 'train':
             # if the image size is too small
             H, W, _ = img_HR.shape
             if H < HR_size or W < HR_size:
                 img_HR = cv2.resize(
                     np.copy(img_HR), (HR_size, HR_size), interpolation=cv2.INTER_LINEAR)
+                #print("inner IF: " + str(img_LR.shape)+ " " + str(img_randomLR.shape))
                 # using matlab imresize
                 img_LR = util.imresize_np(img_HR, 1 / scale, True)
                 if img_LR.ndim == 2:
                     img_LR = np.expand_dims(img_LR, axis=2)
+                    #print("inner inner IF" + str(img_LR.shape))
 
             H, W, C = img_LR.shape
             LR_size = HR_size // scale
+            # print("Beforre crop: " + str(img_LR.shape) + str(img_HR.shape) + str(img_randomLR.shape))
+            # Hr, Wr, Cr = img_randomLR.shape
+            # # randomly crop
+            # print(str(img_LR.shape) + str(img_HR.shape) + str(img_randomLR.shape))
 
-            # randomly crop
             rnd_h = random.randint(0, max(0, H - LR_size))
             rnd_w = random.randint(0, max(0, W - LR_size))
+            # rnd_hr = random.randint(0, max(0, Hr - LR_size))
+            # rnd_wr = random.randint(0, max(0, Wr - LR_size))
             img_LR = img_LR[rnd_h:rnd_h + LR_size, rnd_w:rnd_w + LR_size, :]
+            img_randomLR = img_randomLR[rnd_h:rnd_h + LR_size, rnd_w:rnd_w + LR_size, :]
 
             H, W, C = img_HR.shape
 
-            # randomly crop
+            # # randomly crop
             rnd_h = random.randint(0, max(0, H - HR_size))
             rnd_w = random.randint(0, max(0, W - HR_size))
 
             img_HR = img_HR[rnd_h:rnd_h + HR_size, rnd_w:rnd_w + HR_size, :]
+            # print(str(img_LR.shape) + str(img_HR.shape) + str(img_randomLR.shape))
 
-            # augmentation - flip, rotate
-            img_LR, img_HR = util.augment([img_LR, img_HR], self.opt['use_flip'], \
-                self.opt['use_rot'])
+            # LR_size = HR_size // scale
+            # img_HR = cv2.resize(img_HR, (HR_size, HR_size))
+            # img_LR = cv2.resize(img_LR, (LR_size,LR_size))
+            # #print(str(img_LR.shape) + str(img_HR.shape) + str(img_randomLR.shape))
+            #augmentation - flip, rotate
+            img_LR, img_HR, img_randomLR = util.augment([img_LR, img_HR, img_randomLR], self.opt['use_flip'], \
+               self.opt['use_rot'])
 
         # change color space if necessary
         if self.opt['color']:
@@ -102,12 +119,16 @@ class LRHRDataset(data.Dataset):
         if img_HR.shape[2] == 3:
             img_HR = img_HR[:, :, [2, 1, 0]]
             img_LR = img_LR[:, :, [2, 1, 0]]
+            img_randomLR = img_randomLR[:, :, [2, 1, 0]]
+
         img_HR = torch.from_numpy(np.ascontiguousarray(np.transpose(img_HR, (2, 0, 1)))).float()
         img_LR = torch.from_numpy(np.ascontiguousarray(np.transpose(img_LR, (2, 0, 1)))).float()
+        img_randomLR = torch.from_numpy(np.ascontiguousarray(np.transpose(img_randomLR, (2, 0, 1)))).float()
 
+        #print("DIMENSIONS: " + str(img_LR.shape) + str(img_HR.shape) + str(img_randomLR.shape))
         if LR_path is None:
             LR_path = HR_path
-        return {'LR': img_LR, 'HR': img_HR, 'LR_path': LR_path, 'HR_path': HR_path}
+        return {'LR': img_LR, 'HR': img_HR, 'randomLR': img_randomLR, 'LR_path': LR_path, 'HR_path': HR_path, 'randomLR_path': randomLR_path }
 
     def __len__(self):
         return len(self.paths_LR)

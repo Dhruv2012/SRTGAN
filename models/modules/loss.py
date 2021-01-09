@@ -5,6 +5,11 @@ import torch.nn as nn
 # Define GAN loss: [vanilla | lsgan | wgan-gp]
 class GANLoss(nn.Module):
     def __init__(self, gan_type, real_label_val=1.0, fake_label_val=0.0):
+        
+        # def TripletLoss(self, anchor, positive, negative):
+        #     loss = nn.MSELoss(anchor, positive) - nn.MSELoss(anchor, negative) + 1
+        #     loss = max(loss,0)
+        #     return loss 
         super(GANLoss, self).__init__()
         self.gan_type = gan_type.lower()
         self.real_label_val = real_label_val
@@ -14,6 +19,8 @@ class GANLoss(nn.Module):
             self.loss = nn.BCEWithLogitsLoss()
         elif self.gan_type == 'lsgan':
             self.loss = nn.MSELoss()
+        elif self.gan_type == 'tripletgan':
+            self.loss = TripletLoss()
         elif self.gan_type == 'wgan-gp':
 
             def wgan_loss(input, target):
@@ -27,10 +34,13 @@ class GANLoss(nn.Module):
     def get_target_label(self, input, target_is_real):
         if self.gan_type == 'wgan-gp':
             return target_is_real
+        elif self.gan_type == 'tripletgan':
+            return target_is_real
         if target_is_real:
             return torch.empty_like(input).fill_(self.real_label_val)
         else:
             return torch.empty_like(input).fill_(self.fake_label_val)
+
 
     def forward(self, input, target_is_real):
         target_label = self.get_target_label(input, target_is_real)
@@ -58,3 +68,23 @@ class GradientPenaltyLoss(nn.Module):
 
         loss = ((grad_interp_norm - 1)**2).mean()
         return loss
+
+
+
+class TripletLoss(nn.Module):
+    """docstring for TRipletLoss"""
+    def __init__(self):
+        super(TripletLoss, self).__init__()
+        self.mseloss = nn.MSELoss()
+        self.sigmoid = nn.Sigmoid()
+        
+    def forward(self, input, target_label):
+        anchor, positive, negative = input
+        loss = self.mseloss(anchor, positive) - self.mseloss(anchor, negative) + 1
+        # loss = self.sigmoid(self.mseloss(anchor, positive)) - self.sigmoid(self.mseloss(anchor, negative)) + 1
+        # loss = torch.max(loss, 0)
+        return loss 
+
+
+
+        

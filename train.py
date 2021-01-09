@@ -15,11 +15,12 @@ from utils import util
 from data import create_dataloader, create_dataset
 from models import create_model
 import lpips_models
+# from torch.utils.tensorboard import SummaryWriter
 
 def main():
     # options
     assert torch.cuda.is_available()
-
+    # writer = SummaryWriter()
     parser = argparse.ArgumentParser()
     parser.add_argument('-opt', type=str, required=True, help='Path to option JSON file.')
     opt = option.parse(parser.parse_args().opt, is_train=True)
@@ -173,6 +174,7 @@ def main():
                 # tensorboard logger
                 if opt['use_tb_logger'] and 'debug' not in opt['name']:
                     tb_logger.add_scalar('psnr', avg_psnr, current_step)
+                    tb_logger.add_scalar('lpips', avg_lp, current_step)
 
             # update learning rate
             model.update_learning_rate()

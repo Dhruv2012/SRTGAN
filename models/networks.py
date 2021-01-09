@@ -144,8 +144,18 @@ def define_D2(opt):
     gpu_ids = opt['gpu_ids']
     opt_net = opt['network_D']
     
-    netD = arch.Discriminator(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
-        norm_type=opt_net['norm_type'], mode=opt_net['mode'], act_type=opt_net['act_type'],out_feat=1)
+    netD = arch.NLayerDiscriminator(input_nc=opt_net['in_nc'])
+    
+    init_weights(netD, init_type='kaiming', scale=1)
+    if gpu_ids:
+        netD = nn.DataParallel(netD)
+    return netD
+
+def define_EdgeD3(opt):
+    gpu_ids = opt['gpu_ids']
+    opt_net = opt['network_D']
+    
+    netD = arch.NLayerDiscriminatorEdge(input_nc=opt_net['in_nc'])
     
     init_weights(netD, init_type='kaiming', scale=1)
     if gpu_ids:

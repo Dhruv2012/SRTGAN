@@ -1,6 +1,10 @@
 import os
 import logging
 from collections import OrderedDict
+import sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(parentdir)
 
 import torch
 import torch.nn as nn
@@ -9,8 +13,10 @@ from torch.optim import lr_scheduler
 import models.networks as networks
 from .base_model import BaseModel
 from models.modules.loss import GANLoss
+import models.modules.block as B
 torch.autograd.set_detect_anomaly(True)
 logger = logging.getLogger('base')
+
 
 
 class NTIRE_model(BaseModel):
@@ -21,14 +27,15 @@ class NTIRE_model(BaseModel):
         # define networks and load pretrained models
         self.netG = networks.define_G1(opt).to(self.device)  # G1
         if self.is_train:
-            self.netV = networks.define_D(opt).to(self.device)  # G1
-            self.netD, self.edge_score_layer = networks.define_patchD(opt=opt)
+            # self.netV = networks.define_D(opt).to(self.device)  # G1
+            #self.netD, self.edge_score_layer = networks.define_patchD(opt=opt)
+            self.netD = networks.define_D2(opt=opt)
             self.netD = self.netD.to(self.device)
             self.netQ = networks.define_Q(opt).to(self.device)
             self.netG.train()
-            self.netV.train()
+            # self.netV.train()
             self.netD.train()
-            self.load()  # load G and D if needed
+        self.load()  # load G and D if needed
 
         # define losses, optimizer and scheduler
         if self.is_train:
@@ -85,9 +92,9 @@ class NTIRE_model(BaseModel):
                 weight_decay=wd_D, betas=(train_opt['beta1_D'], 0.999))
             self.optimizers.append(self.optimizer_D)
 
-            self.optimizer_V = torch.optim.Adam(self.netV.parameters(), lr=train_opt['lr_D'], \
-                weight_decay=wd_D, betas=(train_opt['beta1_D'], 0.999))
-            self.optimizers.append(self.optimizer_V)
+            # self.optimizer_V = torch.optim.Adam(self.netV.parameters(), lr=train_opt['lr_D'], \
+            #     weight_decay=wd_D, betas=(train_opt['beta1_D'], 0.999))
+            # self.optimizers.append(self.optimizer_V)
 
             # schedulers
             if train_opt['lr_scheme'] == 'MultiStepLR':
@@ -104,87 +111,79 @@ class NTIRE_model(BaseModel):
     def feed_data(self, data, need_HR=True):
         # LR
         self.var_L = data['LR'].to(self.device)
+        self.var_randomLR = data['randomLR'].to(self.device)
         if need_HR:  # train or val
             self.var_H = data['HR'].to(self.device)
 
     def optimize_parameters(self, step):
         # G
         n1 = torch.nn.Upsample(scale_factor=4)
-        self.optimizer_G.zero_grad()
-        self.SR = self.netG(self.var_L)
-        # self.SR_Encoded = self.netV(self.SR)
-        # self.HR_Encoded = self.netV(self.var_H)
-        #self.SR_D = self.netD(self.SR), self.edge_scores)
-        self.HR_D = self.netD(self.var_H)
-        self.SR_D = self.netD(self.SR.detach())
-        edge_SR =  self.edge_score_layer.forward(n1(self.var_L.detach()))
-        edge_HR = self.edge_score_layer.forward(self.var_H.detach())
-        #edge_HR=1
-        #edge_SR=1
+        for i in range(10):
+            self.optimizer_G.zero_grad()
+            self.SR = self.netG(self.var_L)
+            Quality_loss = 2e-7 * (5-torch.mean(self.netQ(self.SR).detach()))
+            self.HR_D = self.netD(self.var_H.detach())
+            self.var_randomLR_us = n1(self.var_randomLR.detach())
+            self.LR_D = self.netD(self.var_randomLR_us.detach())
+            self.SR_D = self.netD(self.SR)
+
+            l_g_total = 0
+            
+            if(self.l_pix_w > 0):
+               l_g_pix = self.l_pix_w * self.cri_pix(self.SR, n1(self.var_L))
+               l_g_total += l_g_pix
+
+            l_g_percep = self.l_fea_w * self.cri_fea(self.netF(n1(self.var_L.detach())), self.netF(self.SR.detach()))
+            l_g_total += l_g_percep
+
+            l_g_dis = self.l_gan_w * self.cri_gan((self.SR_D, self.HR_D, self.LR_D), 0) #gen = (1-SR_D)^2
+            l_g_total += 2*l_g_dis
+
+            l_g_total += Quality_loss
+            l_g_total =  l_g_total
+
+            l_g_total.backward()
+            self.optimizer_G.step()
+
         
-        #for i in self.edge_score_layer.parameters():
-        #    print(i.data)
-        #print(self.edge_score_layer.weight)
-
-        # Quality_loss = 2e-6 * (5-torch.mean(self.netQ(self.SR).detach()))
-
-        l_g_total = 0
-        
-        if(self.l_pix_w > 0):
-           l_g_pix = self.l_pix_w * self.cri_pix(self.SR, n1(self.var_L))
-           l_g_total += l_g_pix
-
-        l_g_percep = self.l_fea_w * self.cri_fea(self.netF(n1(self.var_L.detach())), self.netF(self.SR.detach()))
-        l_g_total += l_g_percep
-
-        l_g_dis = self.l_gan_w * self.cri_gan(self.SR_D*edge_SR, True)   #gen = (1-SR_D)^2
-        l_g_total += l_g_dis
-        
-        # l_g_vae = self.weight_D * self.cri_pix(self.HR_Encoded, self.SR_Encoded)
-        # l_g_total += l_g_vae
-
-        # l_g_tv = 5e-11 * (torch.sum(torch.abs(self.SR[:, :, :, :-1] - self.SR[:, :, :, 1:])) + torch.sum(torch.abs(self.SR[:, :, :-1, :] - self.SR[:, :, 1:, :])))
-        # l_g_total +=l_g_tv
-
-        # l_g_total += Quality_loss
-
-        l_g_total.backward(retain_graph = True)
-        self.optimizer_G.step()
-
         self.optimizer_D.zero_grad()
+        self.HR_D = self.netD(self.var_H.detach())
+        self.var_randomLR_us = n1(self.var_randomLR.detach())
+        self.LR_D = self.netD(self.var_randomLR_us.detach())
+        self.SR_D = self.netD(self.SR.detach())
+    
+        
         l_d_total = 0
-        g1 = self.l_gan_w * self.cri_gan(self.SR_D*edge_SR, False)# disc = (1-HR_D*edgeHR)^2 + SR_D^2*edgeSR 
-        g2 = self.l_gan_w * self.cri_gan(self.HR_D*edge_HR, True)
-        l_d_total += (g1 + g2)*0.5
 
+        #g1 = self.l_gan_w * self.cri_gan(self.relLR_D, False)# disc = (1-HR_D*edgeHR)^2 + SR_D^2*edgeSR 
+        #g2 = self.l_gan_w * self.cri_gan(self.relHR_D, True)
+        #l_d_total += (g1 + g2)*0.5
+    
+        l_d_total = self.l_gan_w * self.cri_gan((self.SR_D, self.LR_D, self.HR_D), 1)
+        l_d_total = 1*l_d_total
 
         l_d_total.backward()
         self.optimizer_D.step()
 
-        # self.optimizer_V.zero_grad()
-        # log_v_total = 0
-        # self.HR_Encoded = self.netV(self.var_H)
-        
-        # half_size = int(self.HR_Encoded.shape[1]//2)
-        # mu = self.HR_Encoded[:,0:half_size]
-        # logvar = self.HR_Encoded[:,half_size:]
-        # loss_kl = torch.mean(1 + logvar - mu.pow(2) - logvar.exp()) * (-0.5 * self.weight_kl)
-        # log_v_total += loss_kl
-
-        # log_v_total.backward()
-        # self.optimizer_V.step()
+    
 
         # set log
         self.log_dict['l_g_percep'] = l_g_percep.item()
         self.log_dict['l_g_d'] = l_g_dis.item()
         self.log_dict['l_g_pix'] = l_g_pix.item()
-        # self.log_dict['l_g_tv'] = l_g_tv.item()
-        # self.log_dict['l_d_kl'] = loss_kl.item()
-
+        self.log_dict['l_d_total'] = l_d_total.item()
+        self.log_dict['Quality_Loss'] = Quality_loss.item()
+    
     def test(self):
         self.netG.eval()
+
         with torch.no_grad():
+            n1 = torch.nn.Upsample(scale_factor=4)
             self.SR = self.netG(self.var_L)
+            self.HR_D = self.netD(self.var_H.detach())
+            self.var_randomLR = n1(self.var_randomLR.detach())
+            self.LR_D = self.netD(self.var_randomLR.detach())
+            self.SR_D = self.netD(self.SR.detach())
         self.netG.train()
 
     def get_current_log(self):
@@ -225,16 +224,16 @@ class NTIRE_model(BaseModel):
             logger.info('Loading pretrained model for G [{:s}] ...'.format(load_path_G))
             self.load_network(load_path_G, self.netG)
         
-        load_path_D = None
+        load_path_D = self.opt['path']['pretrain_model_D']
         if self.opt['is_train'] and load_path_D is not None:
             logger.info('Loading pretrained model for D [{:s}] ...'.format(load_path_D))
             self.load_network(load_path_D, self.netD)
-        load_path_Q = "/home/kalpesh/SuperResolution_Abhinav_Dhruv/code/code/latest_G.pth"
-        logger.info('Loading pretrained model for Q [{:s}] ...'.format(load_path_Q))
-        self.load_network(load_path_Q, self.netQ)
+        # load_path_Q = "/home/kalpesh/SuperResolution_Abhinav_Dhruv/code/code/latest_G.pth"
+        # logger.info('Loading pretrained model for Q [{:s}] ...'.format(load_path_Q))
+        # self.load_network(load_path_Q, self.netQ)
     
 
     def save(self, iter_step):
         self.save_network(self.netG, 'G', iter_step)
         self.save_network(self.netD, 'D', iter_step)
-        self.save_network(self.netV, 'V', iter_step)
+        # self.save_network(self.netV, 'V', iter_step)
