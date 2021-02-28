@@ -1,0 +1,89 @@
+// Not total the same as SRGAN in <Photo-Realistic Single Image Super-Resolution Using a Generative Adversarial Network>
+{
+  "name": "final_run_workshop_4" //  please remove "debug_" during training
+  , "use_tb_logger": true
+  , "model":"ntire"
+  , "scale": 4
+  , "gpu_ids": [0]
+
+  , "datasets": {
+    "train": {
+      "name": "NTIRE"
+      , "mode": "LRHR"
+      , "dataroot_HR": "F:/ImageSuperResolution/Supervised/code/HR"
+      , "dataroot_LR": "F:/ImageSuperResolution/Supervised/code/LR"
+      , "subset_file": null
+      , "use_shuffle": true
+      , "n_workers": 8
+      , "batch_size": 8
+      , "HR_size": 196
+      , "use_flip": true
+      , "use_rot": true
+    }
+    , "val": {
+      "name": "val_NTIRE"
+      , "mode": "LRHR"
+      , "dataroot_HR": "F:/ImageSuperResolution/Supervised/code/valY"
+      , "dataroot_LR": "F:/ImageSuperResolution/Supervised/code/valX"
+    }
+    // , "test": {
+    //   "name": "test_NTIRE"
+    //   , "mode": "LRHR"
+    //   , "dataroot_HR": "F:/ImageSuperResolution/Supervised/code/valYDiv2K"
+    //   , "dataroot_LR": "F:/ImageSuperResolution/Supervised/code/valXDiv2K"   
+    // }
+  }
+
+  , "path": {
+    "root": "F:/ImageSuperResolution/Supervised/code/"
+    , "resume_state": null//"/home/kalpesh/SuperResolution_Abhinav_Dhruv/code/code/experiments/new__DhruvEdgeScore_with_all_weightTune_loop_v1/training_state/14000.state"
+    , "pretrain_model_G": "F:/ImageSuperResolution/Supervised/code/experiments/final_run_workshop_3/models/3000_G.pth"
+    , "pretrain_model_D": null//"/home/kalpesh/SuperResolution_Abhinav_Dhruv/code/code/experiments/new__DhruvEdgeScore_with_all_weightTune_loop_v1/models/14000_D.ptnull//h"
+  }
+
+  , "network_G": {
+    "which_model_G": "SRGAN_Gen" // RRDB_net | sr_resnet | SRGANGen
+    , "norm_type": null
+    , "mode": "CNA"
+    , "nf": 64
+    , "nb": 16
+    , "in_nc": 3
+    , "out_nc": 3
+  }
+  , "network_D": {
+    "which_model_D": "discriminator_SRGAN"
+    , "norm_type": "batch"
+    , "act_type": "leakyrelu"
+    , "mode": "CNA"
+    , "nf": 32
+    , "in_nc": 3
+  }
+
+  , "train": {
+    "lr_G": 1e-4
+    , "weight_decay_G": 0
+    , "beta1_G": 0.9
+    , "lr_D": 1e-4
+    , "weight_decay_D": 0
+    , "beta1_D": 0.9
+    , "lr_scheme": "MultiStepLR"
+    , "lr_steps": [2000, 4000, 6000, 13000, 25000, 50000, 150000]
+    , "lr_gamma": 0.5
+
+    , "pixel_criterion": "l1"
+    , "pixel_weight": 1
+    , "feature_criterion": "l2"
+    , "feature_weight": 0.5
+    , "gan_type": "tripletgan"
+    , "gan_weight": 1e-1
+
+    , "manual_seed": 0
+    , "niter": 500000
+    , "val_freq": 250
+  }
+
+  , "logger": {
+    "print_freq": 50
+    , "save_checkpoint_freq": 1000
+  }
+}
