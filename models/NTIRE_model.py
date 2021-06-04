@@ -131,7 +131,8 @@ class NTIRE_model(BaseModel):
                l_g_pix = self.l_pix_w * self.cri_pix(self.SR, self.var_H)
                l_g_total += l_g_pix
 
-            l_g_percep = self.l_fea_w * self.cri_fea(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
+            #l_g_percep = self.l_fea_w * self.cri_fea(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
+            l_g_percep = self.l_fea_w * calculatePercepLoss(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
             l_g_total += l_g_percep
 
             l_g_dis = self.l_gan_w * self.cri_gan((self.SR_D, self.HR_D, self.LR_D), 0) #gen = (1-SR_D)^2
@@ -171,6 +172,13 @@ class NTIRE_model(BaseModel):
         self.log_dict['l_d_total'] = l_d_total.item()
         self.log_dict['Quality_Loss'] = Quality_loss.item()
     
+    def calculatePercepLoss(HRFeatures, SRFeatures):
+        loss = 0.0
+        for i in range(len(HRFeatures)):
+            maxVal = max(HRFeatures[i], SRFeatures[i])
+            loss += self.cri_fea(HRFeatures[i]/maxVal, SRFeatures[i]/maxVal)
+        return loss
+
     def test(self):
         self.netG.eval()
 

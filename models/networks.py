@@ -241,8 +241,9 @@ def define_F(opt, use_bn=False, Rlu=False):
         else:
             feature_layer = 35
 
-    netF = arch.VGGFeatureExtractor(feature_layer=feature_layer, use_bn=use_bn, \
-        use_input_norm=True, device=device)
+    # netF = arch.VGGFeatureExtractor(feature_layer=feature_layer, use_bn=use_bn, \
+    #     use_input_norm=True, device=device)
+    netF = arch.Vgg16_perceptual()
     # netF = arch.ResNet101FeatureExtractor(use_input_norm=True, device=device)
     if gpu_ids:
         netF = nn.DataParallel(netF)
