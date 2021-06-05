@@ -48,14 +48,14 @@ class NTIRE_model(BaseModel):
                     self.cri_pix = nn.MSELoss().to(self.device)
                 else:
                     raise NotImplementedError('Loss type [{:s}] not recognized.'.format(l_pix_type))
-                self.l_pix_w = train_opt['pixel_weight']
+                #self.l_pix_w = train_opt['pixel_weight']
             else:
                 logger.info('Remove pixel loss.')
                 self.cri_pix = None
             self.weight_kl = 1e-2
             self.weight_D = 1e-3
             self.l_gan_w = train_opt['gan_weight']
-
+            self.l_pix_w = train_opt['pixel_weight']
             # G feature loss
             if train_opt['feature_weight'] > 0:
                 l_fea_type = train_opt['feature_criterion']
@@ -70,8 +70,9 @@ class NTIRE_model(BaseModel):
                 logger.info('Remove feature loss.')
                 self.cri_fea = None
             if self.cri_fea:  # load VGG perceptual loss
-                self.netF = networks.define_F(opt, use_bn=False,Rlu=True).to(self.device)   #Rlu=True if feature taken before relu, else false
-
+                self.netF = networks.define_F(opt, use_bn=False,Rlu=True).to(self.device) #Rlu=True if feature taken before relu, else false
+                self.percepLossInfo = []
+                
             self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)
             # optimizers
             # G
@@ -113,7 +114,20 @@ class NTIRE_model(BaseModel):
         self.var_L = data['LR'].to(self.device)
         if need_HR:  # train or val
             self.var_H = data['HR'].to(self.device)
-
+    
+    def calculatePercepLoss(self, HRFeatures, SRFeatures):
+        loss = 0.0
+        divFactor = [[224,64],[112,128],[56,256],[28,512]]
+        self.percepLossInfo = []
+        for i in range(len(HRFeatures)):
+            #maxVal = max(HRFeatures[i], SRFeatures[i])
+            scaledHRFeatures = torch.div(HRFeatures[i], divFactor[i][0] * divFactor[i][0] * divFactor[i][1])
+            scaledSRFeatures = torch.div(SRFeatures[i], divFactor[i][0] * divFactor[i][0] * divFactor[i][1])
+            l2norm = self.cri_fea(scaledHRFeatures, scaledSRFeatures)
+            self.percepLossInfo.insert(i, l2norm)
+            loss += l2norm
+        return loss
+    
     def optimize_parameters(self, step):
         # G
         n1 = torch.nn.Upsample(scale_factor=1/4)
@@ -121,6 +135,7 @@ class NTIRE_model(BaseModel):
             self.optimizer_G.zero_grad()
             self.SR = self.netG(n1(self.var_L))
             Quality_loss = 2e-7 * (5-torch.mean(self.netQ(self.SR).detach()))
+            #Quality_loss = 0
             self.HR_D = self.netD(self.var_H.detach())
             self.LR_D = self.netD(self.var_L.detach())
             self.SR_D = self.netD(self.SR)
@@ -132,7 +147,7 @@ class NTIRE_model(BaseModel):
                l_g_total += l_g_pix
 
             #l_g_percep = self.l_fea_w * self.cri_fea(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
-            l_g_percep = self.l_fea_w * calculatePercepLoss(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
+            l_g_percep = self.l_fea_w * self.calculatePercepLoss(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
             l_g_total += l_g_percep
 
             l_g_dis = self.l_gan_w * self.cri_gan((self.SR_D, self.HR_D, self.LR_D), 0) #gen = (1-SR_D)^2
@@ -166,19 +181,18 @@ class NTIRE_model(BaseModel):
     
 
         # set log
+        self.log_dict['l_g_percep_output1'] = self.percepLossInfo[0].item()
+        self.log_dict['l_g_percep_output2'] = self.percepLossInfo[1].item()
+        self.log_dict['l_g_percep_output3'] = self.percepLossInfo[2].item()
+        self.log_dict['l_g_percep_output4'] = self.percepLossInfo[3].item()
         self.log_dict['l_g_percep'] = l_g_percep.item()
         self.log_dict['l_g_d'] = l_g_dis.item()
-        self.log_dict['l_g_pix'] = l_g_pix.item()
+        if(self.l_pix_w > 0):
+            self.log_dict['l_g_pix'] = l_g_pix.item()
         self.log_dict['l_d_total'] = l_d_total.item()
-        self.log_dict['Quality_Loss'] = Quality_loss.item()
+        if(Quality_loss > 0):
+            self.log_dict['Quality_Loss'] = Quality_loss.item()
     
-    def calculatePercepLoss(HRFeatures, SRFeatures):
-        loss = 0.0
-        for i in range(len(HRFeatures)):
-            maxVal = max(HRFeatures[i], SRFeatures[i])
-            loss += self.cri_fea(HRFeatures[i]/maxVal, SRFeatures[i]/maxVal)
-        return loss
-
     def test(self):
         self.netG.eval()
 

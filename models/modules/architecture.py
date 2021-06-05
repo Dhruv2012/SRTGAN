@@ -6,6 +6,7 @@ from . import block as B
 from . import spectral_norm as SN
 from . import dbpn
 import functools
+from torchvision import models
 ####################
 # Generator
 ####################
@@ -302,7 +303,7 @@ class VGGFeatureExtractor(nn.Module):
         
 class Vgg16_perceptual(nn.Module):
     def __init__(self):
-        super(Vgg16, self).__init__()
+        super(Vgg16_perceptual, self).__init__()
         features = models.vgg16(pretrained=True).features
         self.to_relu_1_2 = nn.Sequential() 
         self.to_relu_2_2 = nn.Sequential() 
