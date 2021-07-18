@@ -12,6 +12,7 @@ import utils.util as util
 from data.util import bgr2ycbcr
 from data import create_dataset, create_dataloader
 from models import create_model
+import lpips_models
 
 if __name__ ==  '__main__':
     # options
@@ -36,6 +37,7 @@ if __name__ ==  '__main__':
         logger.info('Number of test images in [{:s}]: {:d}'.format(dataset_opt['name'], len(test_set)))
         test_loaders.append(test_loader)
 
+    lpips_mode = lpips_models.PerceptualLoss()
     # Create model
     model = create_model(opt)
 
@@ -49,6 +51,7 @@ if __name__ ==  '__main__':
         test_results = OrderedDict()
         test_results['psnr'] = []
         test_results['ssim'] = []
+        test_results['lpips'] = []
         test_results['psnr_y'] = []
         test_results['ssim_y'] = []
 
@@ -73,7 +76,7 @@ if __name__ ==  '__main__':
                 save_img_path = os.path.join(dataset_dir, img_name + '.png')
             util.save_img(sr_img, save_img_path)
 
-            # calculate PSNR and SSIM
+            # calculate PSNR and SSIM and LPIPS
             if need_HR:
                 gt_img = util.tensor2img(visuals['HR'])
                 gt_img = gt_img / 255.
@@ -96,8 +99,11 @@ if __name__ ==  '__main__':
 
                 psnr = util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
                 ssim = util.calculate_ssim(cropped_sr_img * 255, cropped_gt_img * 255)
+                lpips = lpips_mode.forward(visuals['HR']*2-1,visuals['SR']*2-1)
+
                 test_results['psnr'].append(psnr)
                 test_results['ssim'].append(ssim)
+                test_results['lpips'].append(lpips)
 
                 if gt_img.shape[2] == 3:  # RGB image
                     sr_img_y = bgr2ycbcr(sr_img, only_y=True)
@@ -113,10 +119,12 @@ if __name__ ==  '__main__':
                     ssim_y = util.calculate_ssim(cropped_sr_img_y * 255, cropped_gt_img_y * 255)
                     test_results['psnr_y'].append(psnr_y)
                     test_results['ssim_y'].append(ssim_y)
-                    logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; PSNR_Y: {:.6f} dB; SSIM_Y: {:.6f}.'\
-                        .format(img_name, psnr, ssim, psnr_y, ssim_y))
+                    logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}; PSNR_Y: {:.6f} dB; SSIM_Y: {:.6f}.'.format(img_name, psnr, ssim, lpips.item(), psnr_y, ssim_y))
+                    # logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}; PSNR_Y: {:.6f} dB; SSIM_Y: {:.6f}.'\
+                    #     .format(img_name, psnr, ssim, 0, psnr_y, ssim_y))
                 else:
-                    logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}.'.format(img_name, psnr, ssim))
+                    #logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}.'.format(img_name, psnr, ssim, 0))
+                    logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}.'.format(img_name, psnr, ssim, lpips))
             else:
                 logger.info(img_name)
 
@@ -124,8 +132,11 @@ if __name__ ==  '__main__':
             # Average PSNR/SSIM results
             ave_psnr = sum(test_results['psnr']) / len(test_results['psnr'])
             ave_ssim = sum(test_results['ssim']) / len(test_results['ssim'])
-            logger.info('----Average PSNR/SSIM results for {}----\n\tPSNR: {:.6f} dB; SSIM: {:.6f}\n'\
-                    .format(test_set_name, ave_psnr, ave_ssim))
+            ave_lpips = sum(test_results['lpips']) / len(test_results['lpips'])
+            logger.info('----Average PSNR/SSIM results for {}----\n\tPSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}\n'\
+                    .format(test_set_name, ave_psnr, ave_ssim, ave_lpips))
+            # logger.info('----Average PSNR/SSIM results for {}----\n\tPSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}\n'\
+            #         .format(test_set_name, ave_psnr, ave_ssim, 0))
             if test_results['psnr_y'] and test_results['ssim_y']:
                 ave_psnr_y = sum(test_results['psnr_y']) / len(test_results['psnr_y'])
                 ave_ssim_y = sum(test_results['ssim_y']) / len(test_results['ssim_y'])
