@@ -1,4 +1,3 @@
-// Not total the same as SRGAN in <Photo-Realistic Single Image Super-Resolution Using a Generative Adversarial Network>
 {
   "name": "PercepLoss_optimized+GANLoss" //  please remove "debug_" during training
   , "use_tb_logger": true
@@ -10,12 +9,14 @@
     "train": {
       "name": "NTIRE"
       , "mode": "LRHR"
-      , "dataroot_HR": "/root/Image-SuperResolution/HR"
-      , "dataroot_LR": "/root/Image-SuperResolution/LR"
+      // , "dataroot_HR": "/root/Image-SuperResolution/HR"
+      // , "dataroot_LR": "/root/Image-SuperResolution/LR"
+      , "dataroot_HR": "/home/manav/Desktop/ImageSR/ImageSR_Drive/imageSR/Datasets/RealSR/HR/"
+      , "dataroot_LR": "/home/manav/Desktop/ImageSR/ImageSR_Drive/imageSR/Datasets/RealSR/LR/"
       , "subset_file": null
       , "use_shuffle": true
       , "n_workers": 8
-      , "batch_size": 32
+      , "batch_size": 1
       , "HR_size": 196
       , "use_flip": true
       , "use_rot": true
@@ -23,19 +24,16 @@
     , "val": {
       "name": "val_NTIRE"
       , "mode": "LRHR"
-      , "dataroot_HR": "/root/Image-SuperResolution/valY"
-      , "dataroot_LR": "/root/Image-SuperResolution/valX"
+      // , "dataroot_HR": "/root/Image-SuperResolution/valY"
+      // , "dataroot_LR": "/root/Image-SuperResolution/valX"
+      , "dataroot_HR": "/home/manav/Desktop/ImageSR/ImageSR_Drive/imageSR/Datasets/RealSR/valY/"
+      , "dataroot_LR": "/home/manav/Desktop/ImageSR/ImageSR_Drive/imageSR/Datasets/RealSR/valX/"
     }
-    // , "test": {
-    //   "name": "test_NTIRE"
-    //   , "mode": "LRHR"
-    //   , "dataroot_HR": "F:/ImageSuperResolution/Supervised/code/valYDiv2K"
-    //   , "dataroot_LR": "F:/ImageSuperResolution/Supervised/code/valXDiv2K"   
-    // }
   }
 
   , "path": {
-    "root": "/root/Image-SuperResolution"
+    // "root": "/root/Image-SuperResolution"
+    "root": "/home/manav/Desktop/ImageSR/Image-SuperResolution/"
     , "resume_state": null
     , "pretrain_model_G": null
     , "pretrain_model_D": null

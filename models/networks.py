@@ -98,21 +98,6 @@ def define_G1(opt):
         netG = nn.DataParallel(netG)
     return netG
 
-def define_G3(opt):
-    gpu_ids = opt['gpu_ids']
-    opt_net = opt['network_G']
-
-    netG = arch.RRDBNet2(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'], nf=opt_net['nf'],
-        nb=opt_net['nb'], upscale=opt_net['scale'], norm_type=opt_net['norm_type'],
-        act_type='leakyrelu', mode=opt_net['mode'], upsample_mode='upconv')
-    
-    if opt['is_train']:
-        init_weights(netG, init_type='kaiming', scale=0.1)
-    if gpu_ids:
-        assert torch.cuda.is_available()
-        netG = nn.DataParallel(netG)
-    return netG
-
 def define_G2(opt):
     gpu_ids = opt['gpu_ids']
     opt_net = opt['network_G']
@@ -140,6 +125,7 @@ def define_D(opt):
     if gpu_ids:
         netD = nn.DataParallel(netD)
     return netD
+
 def define_D2(opt):
     gpu_ids = opt['gpu_ids']
     opt_net = opt['network_D']
@@ -241,10 +227,7 @@ def define_F(opt, use_bn=False, Rlu=False):
         else:
             feature_layer = 35
 
-    # netF = arch.VGGFeatureExtractor(feature_layer=feature_layer, use_bn=use_bn, \
-    #     use_input_norm=True, device=device)
     netF = arch.Vgg16_perceptual()
-    # netF = arch.ResNet101FeatureExtractor(use_input_norm=True, device=device)
     if gpu_ids:
         netF = nn.DataParallel(netF)
     netF.eval()  # No need to train
@@ -259,8 +242,6 @@ def define_Q(opt):
     return netQ
 
 def define_Q2():
-    # gpu_ids = opt['gpu_ids']
-
     netQ2 = arch.VGGGAPQualifierwaveModel()
     if False:
         netQ2 = nn.DataParallel(netQ2)
