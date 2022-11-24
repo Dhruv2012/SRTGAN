@@ -2,13 +2,13 @@
 The overall code framework is shown in the following figure. It mainly consists of four parts - `Config`, `Data`, `Model` and `Network`.
 
 <p align="center">
-   <img src="./readme_images/code_framework.png" height="450">
+   <img src="./readme_images/Code Framework new.drawio.png" height="450">
 </p>
 
-Let us take the train commad `python train.py -opt options/train/train_esrgan.json` for example. A sequence of actions will be done after this command. 
+Let us take the train commad `python train.py -opt options/train/train_srtgan.json` for example. A sequence of actions will be done after this command. 
 
 - [`train.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/train.py) is called. 
-- Reads the configuration (a json file) in [`options/train/train_esrgan.json`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options/train/train_ESRGAN.json), including the configurations for data loader, network, loss, training strategies and etc. The json file is processed by [`options/options.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options/train/train_ESRGAN.json).
+- Reads the configuration (a json file) in [`options/train/train_srtgan.json`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options/train/train_srtgan.json), including the configurations for data loader, network, loss, training strategies and etc. The json file is processed by [`options/options.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options/train/train_srtgan.json).
 - Creates the train and validation data loader. The data loader is constructed in [`data/__init__.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/data/__init__.py) according to different data modes.
 - Creates the model (is constructed in [`models/__init__.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/__init__.py) according to different model types). A model mainly consists of two parts - [network structure] and [model definition, e.g., loss definition, optimization and etc]. The network is constructed in [`models/network.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/networks.py) and the detailed structures are in [`models/modules`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/modules).
 - Start to train the model. Other actions like logging, saving intermediate models, validation, updating learning rate and etc are also done during the training.  
@@ -95,4 +95,7 @@ The comparison of the Super-Resolution results obtained using the Proposed Archi
 
 # References
 For designing our Code Framework, we have taken reference of the following repository - https://github.com/xinntao/BasicSR
+
+# Publications
+[Arxiv Link](https://arxiv.org/abs/2211.12180)
 
