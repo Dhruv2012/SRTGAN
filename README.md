@@ -32,5 +32,5 @@ For designing our Code Framework, we have taken reference of the following repos
 [Arxiv Link](https://arxiv.org/abs/2211.12180)
 
 # Website
-A simple description of our project: [SRTGAN](https://srtgan.github.io/srtgan/)
+A simple description of our project: [SRTGAN](https://srtgan.github.io/)
 
