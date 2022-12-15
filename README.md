@@ -54,6 +54,23 @@ For testing the trained model, run the following command
 python test.py -opt options/test/test_srtgan.json
 ```
 
+# Table of Results
+The quantitative assessment of the proposed method without QA and without discriminator networks carried out on RealSR validation dataset.
+<p align="center">
+   <img src="./readme_images/result_table1.png" height="75">
+</p>
+
+The quantitative comparison of the proposed and other existing SR methods on Real SR validation and DIV2KRK datasets.
+<p align="center">
+   <img src="./readme_images/result_table2.png" height="200">
+</p>
+
+# Output 
+The comparison of the Super-Resolution results obtained using the Proposed Architecture and Without Quality Loss method and Without Triplet Loss (Vanilla GAN Loss) method on NTIRE-2020 Real world SR  challenge testing dataset.
+<p align="center">
+   <img src="./readme_images/results.png" height="300">
+</p>
+
 ## References
 For designing our Code Framework, we have taken reference of the following repository - https://github.com/xinntao/BasicSR
 
