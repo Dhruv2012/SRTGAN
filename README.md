@@ -54,6 +54,12 @@ For testing the trained model, run the following command
 python test.py -opt options/test/test_srtgan.json
 ```
 
+## Model Weights
+Following are the drive links for model weight files:
+ * [Generator](https://drive.google.com/file/d/1GfXis8UK3oLmVyhHtr2ZyFHdSCtQQGVz/view?usp=share_link)
+ * [Discriminator](https://drive.google.com/file/d/11Yq9deEx6RgnZ1JrsPmRrFvot4IsG8AW/view?usp=share_link)
+ * [State-file](https://drive.google.com/file/d/1x3T_lz7j_o_VLGYG4eOXya6q1xSKSj59/view?usp=sharing)
+
 # Table of Results
 The quantitative assessment of the proposed method without QA and without discriminator networks carried out on RealSR validation dataset.
 <p align="center">
