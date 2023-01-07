@@ -2,7 +2,7 @@
 The overall code framework is shown in the following figure. It mainly consists of four parts - `Config`, `Data`, `Model` and `Network`.
 
 <p align="center">
-   <img src="./readme_images/Code Framework new.drawio.png" height="450">
+   <img src="./readme_images/CodeFramework new.drawio.png" height="450">
 </p>
 
 Let us take the train commad `python train.py -opt options/train/train_srtgan.json` for example. A sequence of actions will be done after this command. 
@@ -68,7 +68,7 @@ Details can be found [here](https://github.com/Dhruv2012/Image-SuperResolution/b
 # Architecture
 The proposed Supervised method expects the LR and its corresponding HR image as the input. The details of the proposed architecture are shown in the figure below.
 <p align="center">
-   <img src="./readme_images/Proposed Architecture.png" height="350">
+   <img src="./readme_images/ProposedArchitecture.png" height="350">
 </p>
 
 Image Super-resolution on LR image is performed using `Genertor Network`, which is trained using a composite loss consisting of `content loss`, `perceptual loss`, `adversarial loss`, and `quality
