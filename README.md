@@ -1,4 +1,6 @@
-# **SRTGAN: Triplet Loss based Generative Adversarial Network for Real-World Super-Resolutions**  [[Website](https://srtgan.github.io/)][[Paper](https://arxiv.org/abs/2211.12180.pdf)]
+# **SRTGAN: Triplet Loss based Generative Adversarial Network for Real-World Super-Resolutions**  [[Website](https://srtgan.github.io/)][[Paper](https://arxiv.org/abs/2211.12180.pdf)] | CVIP 2022
+*Presented at the <b>Computer Vision and Image Processing (CVIP) conference 2022</b>
+
 ![SRTGAN](readme_images/ProposedArchitecture.png)
 
 A high level overview along with architecture and description of different scripts can be found here: [Description](Description.md)
