@@ -15,6 +15,7 @@ from models import create_model
 import lpips_models
 
 if __name__ ==  '__main__':
+    
     # options
     parser = argparse.ArgumentParser()
     parser.add_argument('-opt', type=str, required=True, help='Path to options JSON file.')
@@ -29,6 +30,7 @@ if __name__ ==  '__main__':
     util.setup_logger(None, opt['path']['log'], 'test.log', level=logging.INFO, screen=True)
     logger = logging.getLogger('base')
     logger.info(option.dict2str(opt))
+    
     # Create test dataset and dataloader
     test_loaders = []
     for phase, dataset_opt in sorted(opt['datasets'].items()):
@@ -38,6 +40,7 @@ if __name__ ==  '__main__':
         test_loaders.append(test_loader)
 
     lpips_mode = lpips_models.PerceptualLoss()
+    
     # Create model
     model = create_model(opt)
 
@@ -60,7 +63,6 @@ if __name__ ==  '__main__':
 
             model.feed_data(data, need_HR=need_HR)
             img_path = data['LR_path'][0]
-            # print(img_path)
             img_name = os.path.splitext(os.path.basename(img_path))[0]
 
             model.test()  # test
@@ -84,18 +86,8 @@ if __name__ ==  '__main__':
 
                 crop_border = test_loader.dataset.opt['scale']
                 
-                # print("SR img size before crop:" + str(sr_img.shape))
-                # print("HR img size before crop:" + str(gt_img.shape))
-                
                 cropped_sr_img = sr_img[crop_border:-crop_border, crop_border:-crop_border, :]
                 cropped_gt_img = gt_img[crop_border:-crop_border, crop_border:-crop_border, :]
-                                # cv2.namedWindow("Display 1")
-                
-                # cv2.resizeWindow("Display 1", 300, 300)
-                # cv2.namedWindow("Display 2")
-                # cv2.resizeWindow("Display 2", 300, 300)
-                # print("SR img size:" + str(cropped_sr_img.shape))
-                # print("HR img size:" + str(cropped_gt_img.shape))
 
                 psnr = util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
                 ssim = util.calculate_ssim(cropped_sr_img * 255, cropped_gt_img * 255)
@@ -111,19 +103,12 @@ if __name__ ==  '__main__':
                     cropped_sr_img_y = sr_img_y[crop_border:-crop_border, crop_border:-crop_border]
                     cropped_gt_img_y = gt_img_y[crop_border:-crop_border, crop_border:-crop_border]
 
-                    # cv2.imshow("Display 1", cropped_sr_img_y)
-                    # cv2.imshow("Display 2", cropped_gt_img_y)
-                    # cv2.waitKey(0)
-
                     psnr_y = util.calculate_psnr(cropped_sr_img_y * 255, cropped_gt_img_y * 255)
                     ssim_y = util.calculate_ssim(cropped_sr_img_y * 255, cropped_gt_img_y * 255)
                     test_results['psnr_y'].append(psnr_y)
                     test_results['ssim_y'].append(ssim_y)
                     logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}; PSNR_Y: {:.6f} dB; SSIM_Y: {:.6f}.'.format(img_name, psnr, ssim, lpips.item(), psnr_y, ssim_y))
-                    # logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}; PSNR_Y: {:.6f} dB; SSIM_Y: {:.6f}.'\
-                    #     .format(img_name, psnr, ssim, 0, psnr_y, ssim_y))
                 else:
-                    #logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}.'.format(img_name, psnr, ssim, 0))
                     logger.info('{:20s} - PSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}.'.format(img_name, psnr, ssim, lpips))
             else:
                 logger.info(img_name)
@@ -135,8 +120,6 @@ if __name__ ==  '__main__':
             ave_lpips = sum(test_results['lpips']) / len(test_results['lpips'])
             logger.info('----Average PSNR/SSIM results for {}----\n\tPSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}\n'\
                     .format(test_set_name, ave_psnr, ave_ssim, ave_lpips))
-            # logger.info('----Average PSNR/SSIM results for {}----\n\tPSNR: {:.6f} dB; SSIM: {:.6f}; LPIPS: {:.6f}\n'\
-            #         .format(test_set_name, ave_psnr, ave_ssim, 0))
             if test_results['psnr_y'] and test_results['ssim_y']:
                 ave_psnr_y = sum(test_results['psnr_y']) / len(test_results['psnr_y'])
                 ave_ssim_y = sum(test_results['ssim_y']) / len(test_results['ssim_y'])

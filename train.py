@@ -15,12 +15,11 @@ from utils import util
 from data import create_dataloader, create_dataset
 from models import create_model
 import lpips_models
-# from torch.utils.tensorboard import SummaryWriter
 
 def main():
+    
     # options
     assert torch.cuda.is_available()
-    # writer = SummaryWriter()
     parser = argparse.ArgumentParser()
     parser.add_argument('-opt', type=str, required=True, help='Path to option JSON file.')
     opt = option.parse(parser.parse_args().opt, is_train=True)
@@ -46,6 +45,7 @@ def main():
         option.check_resume(opt)  # check resume options
 
     logger.info(option.dict2str(opt))
+    
     # tensorboard logger
     if opt['use_tb_logger'] and 'debug' not in opt['name']:
         from tensorboardX import SummaryWriter
@@ -53,14 +53,12 @@ def main():
 
     # random seed
     seed = opt['train']['manual_seed']
-    #seed = None
     if seed is None:
         seed = random.randint(1, 10000)
     logger.info('Random seed: {}'.format(seed))
     util.set_random_seed(seed)
 
     torch.backends.cudnn.benckmark = True
-    # torch.backends.cudnn.deterministic = True
 
     # create train and val dataloader
     for phase, dataset_opt in opt['datasets'].items():
@@ -83,6 +81,7 @@ def main():
             raise NotImplementedError('Phase [{:s}] is not recognized.'.format(phase))
     assert train_loader is not None
     lpips_mode = lpips_models.PerceptualLoss()
+    
     # create model
     model = create_model(opt)
 
@@ -142,17 +141,12 @@ def main():
                     visuals = model.get_current_visuals()
                     sr_img = util.tensor2img(visuals['SR'])  # uint8
                     gt_img = util.tensor2img(visuals['HR'])  # uint8
-                    #dr_img = util.tensor2img(visuals['DR'])  # uint8
 
                     # Save SR images for reference
                     save_img_path = os.path.join(img_dir, 'SR{:s}_{:d}.png'.format(\
                         img_name, current_step))
                     util.save_img(sr_img, save_img_path)
-                    """
-                    save_img_path = os.path.join(img_dir, 'DR{:s}_{:d}.png'.format(\
-                        img_name, current_step))
-                    util.save_img(dr_img, save_img_path)
-                    """
+                    
                     # calculate PSNR, SSIM, LPIPS
                     crop_size = opt['scale']
                     gt_img = gt_img / 255.
@@ -168,6 +162,7 @@ def main():
                 avg_psnr = avg_psnr / idx
                 avg_ssim = avg_ssim/idx
                 avg_lp = lp/ idx
+                
                 # log
                 logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
                 logger_val = logging.getLogger('val')  # validation logger
@@ -181,11 +176,13 @@ def main():
                 logger_val = logging.getLogger('val')  # validation logger
                 logger_val.info('<epoch:{:3d}, iter:{:8,d}> lpips: {:.4e}'.format(
                     epoch, current_step, avg_lp))
+                
                 # tensorboard logger
                 if opt['use_tb_logger'] and 'debug' not in opt['name']:
                     tb_logger.add_scalar('psnr', avg_psnr, current_step)
                     tb_logger.add_scalar('lpips', avg_lp, current_step)
                     tb_logger.add_scalar('ssim', avg_ssim, current_step)
+            
             # update learning rate
             model.update_learning_rate()
 

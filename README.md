@@ -1,98 +1,84 @@
-# Code Framework
-The overall code framework is shown in the following figure. It mainly consists of four parts - `Config`, `Data`, `Model` and `Network`.
+# **SRTGAN: Triplet Loss based Generative Adversarial Network for Real-World Super-Resolutions**  [[Website](https://srtgan.github.io/)][[Paper](https://arxiv.org/abs/2211.12180.pdf)] | CVIP 2022
+*Presented at the <b>Computer Vision and Image Processing (CVIP) conference 2022</b>
 
-<p align="center">
-   <img src="./readme_images/code_framework.png" height="450">
-</p>
+![SRTGAN](readme_images/ProposedArchitecture.png)
 
-Let us take the train commad `python train.py -opt options/train/train_esrgan.json` for example. A sequence of actions will be done after this command. 
+A high level overview along with architecture and description of different scripts can be found here: [Description](Description.md)
 
-- [`train.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/train.py) is called. 
-- Reads the configuration (a json file) in [`options/train/train_esrgan.json`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options/train/train_ESRGAN.json), including the configurations for data loader, network, loss, training strategies and etc. The json file is processed by [`options/options.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options/train/train_ESRGAN.json).
-- Creates the train and validation data loader. The data loader is constructed in [`data/__init__.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/data/__init__.py) according to different data modes.
-- Creates the model (is constructed in [`models/__init__.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/__init__.py) according to different model types). A model mainly consists of two parts - [network structure] and [model definition, e.g., loss definition, optimization and etc]. The network is constructed in [`models/network.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/networks.py) and the detailed structures are in [`models/modules`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/modules).
-- Start to train the model. Other actions like logging, saving intermediate models, validation, updating learning rate and etc are also done during the training.  
+## Abstract
+Many applications such as forensics, surveillance, satellite imaging, medical imaging, etc., demand High-Resolution (HR) images. However, obtaining an HR image is not always possible due to the limitations of optical sensors and their costs. An alternative solution called Single Image Super-Resolution (SISR) is a software-driven approach that aims to take a Low-Resolution (LR) image and obtain the HR image. Most supervised SISR solutions use ground truth HR image as a target and do not include the information provided in the LR image, which could be valuable. In this work, we introduce Triplet Loss-based Generative Adversarial Network hereafter referred as SRTGAN for Image Super-Resolution problem on real-world degradation. We introduce a new triplet-based adversarial loss function that exploits the information provided in the LR image by using it as a negative sample. Allowing the patch-based discriminator with access to both HR and LR images optimizes to better differentiate between HR and LR images; hence, improving the adversary. Further, we propose to fuse the adversarial loss, content loss, perceptual loss, and quality loss to obtain Super-Resolution (SR) image with high perceptual fidelity. We validate the superior performance of the proposed method over the other existing methods on the RealSR dataset in terms of quantitative and qualitative metrics.
 
-Moreover, there are utils and userful scripts. A detailed description is provided as follows.
+## Publications
+Presented at the 7th International Conference on Computer Vision and Image Processing
 
+## Citing us
+```
+@misc{https://doi.org/10.48550/arxiv.2211.12180,
+  doi = {10.48550/ARXIV.2211.12180},
+  
+  url = {https://arxiv.org/abs/2211.12180},
+  
+  author = {Patel, Dhruv and Jain, Abhinav and Bawkar, Simran and Khorasiya, Manav and Prajapati, Kalpesh and Upla, Kishor and Raja, Kiran and Ramachandra, Raghavendra and Busch, Christoph},
+  
+  keywords = {Image and Video Processing (eess.IV), Computer Vision and Pattern Recognition (cs.CV), FOS: Electrical engineering, electronic engineering, information engineering, FOS: Electrical engineering, electronic engineering, information engineering, FOS: Computer and information sciences, FOS: Computer and information sciences},
+  
+  title = {SRTGAN: Triplet Loss based Generative Adversarial Network for Real-World Super-Resolution},
+  
+  publisher = {arXiv},
+  
+  year = {2022},
+  
+  copyright = {Creative Commons Attribution 4.0 International}
+}
 
-<!-- ## Table of Contents
-1. [Config](#config)
-1. [Data](#data)
-1. [Model](#model)
-1. [Network](#network)
-1. [Utils](#utils)
-1. [Scripts](#scripts) -->
+```
 
-## Config
-#### [`options/`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options) Configure the options for data loader, network structure, model, training strategies and etc.
+## Setup
 
-- `json` file is used to configure options and [`options/options.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options/options.py) will convert the json file to python dict.
-- `json` file uses `null` for `None`; and supports `//` comments, i.e., in each line, contents after the `//` will be ignored. 
-- Supports `debug` mode, i.e, model name start with `debug_` will trigger the debug mode.
-- The configuration file and descriptions can be found in [`options`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/options).
+1. Open any terminal and install all required dependencies:
 
-## Data
-#### [`data/`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/data) A data loader to provide data for training, validation and testing.
+   ```
+   pip install -r requirements.txt
+   ```
+2. Edit the Dataset paths in `options/train/train_srtgan.json` and `options/test/test_srtgan.json`.
 
-- A separate data loader module. You can modify/create data loader to meet your own needs.
-- Uses `cv2` package to do image processing, which provides rich operations.
-- [`data/util.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/data/util.py) provides useful tools. 
-- Now, we convert the images to format NCHW, [0,1], RGB, torch float tensor.
+## Training
+To train our model, run the following command
 
-## Model
-#### [`models/`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models) Construct different models for training and testing.
+```
+python train.py -opt options/train/train_srtgan.json
+```
 
-- A model mainly consists of two parts - [network structure] and [model defination, e.g., loss definition, optimization and etc]. The network description is in the [Network part](#network).
-- Based on the [`base_model.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/base_model.py), we define different models, e.g., [`SR_model.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/SR_model.py), [`SRGAN_model.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/SRGAN_model.py), [`SRRaGAN_model.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/SRRaGAN_model.py) and [`SFTGAN_ACD_model.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/SFTGAN_ACD_model.py).
+## Testing
+For testing the trained model, run the following command
 
-## Network
-#### [`models/modules/`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/modules) Construct different network architectures.
+```
+python test.py -opt options/test/test_srtgan.json
+```
 
-- The network is constructed in [`models/network.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/networks.py) and the detailed structures are in [`models/modules`](https://github.com/xinntao/BasicSR/tree/master/codes/models/modules).
-- We provide some useful blocks in [`block.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/modules/block.py) and it is flexible to construct your network structures with these pre-defined blocks.
-- You can also easily write your own network architecture in a seperate file like [`sft_arch.py`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/models/modules/sft_arch.py). 
-
-## Utils
-#### [`utils/`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/utils) Provide useful utilities.
-
-- [logger.py](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/utils/logger.py) provides logging service during training and testing.
-- Support to use [tensorboard](https://www.tensorflow.org/programmers_guide/summaries_and_tensorboard) to visualize and compare training loss, validation PSNR and etc. Installationand usage can be found [here](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/utils).
-- [progress_bar.py](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/utils/progress_bar.py) provides a progress bar which can print the progress. 
-
-## Scripts
-#### [`scripts/`](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/scripts) Privide useful scripts.
-Details can be found [here](https://github.com/Dhruv2012/Image-SuperResolution/blob/master/scripts).
-
-
-# Architecture
-The proposed Supervised method expects the LR and its corresponding HR image as the input. The details of the proposed architecture are shown in the figure below.
-<p align="center">
-   <img src="./readme_images/Proposed Architecture.png" height="350">
-</p>
-
-Image Super-resolution on LR image is performed using `Genertor Network`, which is trained using a composite loss consisting of `content loss`, `perceptual loss`, `adversarial loss`, and `quality
-assessment loss`.
+## Model Weights
+Following are the drive links for model weight files:
+ * [Generator](https://drive.google.com/file/d/1GfXis8UK3oLmVyhHtr2ZyFHdSCtQQGVz/view?usp=share_link)
+ * [Discriminator](https://drive.google.com/file/d/11Yq9deEx6RgnZ1JrsPmRrFvot4IsG8AW/view?usp=share_link)
+ * [State-file](https://drive.google.com/file/d/1x3T_lz7j_o_VLGYG4eOXya6q1xSKSj59/view?usp=sharing)
 
 # Table of Results
 The quantitative assessment of the proposed method without QA and without discriminator networks carried out on RealSR validation dataset.
 <p align="center">
-   <img src="./readme_images/result_table1.png" height="150">
+   <img src="./readme_images/result_table1.png" height="75">
 </p>
 
 The quantitative comparison of the proposed and other existing SR methods on Real SR validation and DIV2KRK datasets.
 <p align="center">
-   <img src="./readme_images/result_table2.png" height="450">
+   <img src="./readme_images/result_table2.png" height="200">
 </p>
 
 # Output 
 The comparison of the Super-Resolution results obtained using the Proposed Architecture and Without Quality Loss method and Without Triplet Loss (Vanilla GAN Loss) method on NTIRE-2020 Real world SR  challenge testing dataset.
 <p align="center">
-   <img src="./readme_images/results.png" height="450">
+   <img src="./readme_images/results.png" height="300">
 </p>
 
-
-
-# References
+## References
 For designing our Code Framework, we have taken reference of the following repository - https://github.com/xinntao/BasicSR
 

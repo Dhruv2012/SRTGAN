@@ -1,0 +1,72 @@
+{
+  "name": "PercepLoss_optimized+GANLoss" //  please remove "debug_" during training
+  , "use_tb_logger": true
+  , "model":"ntire"
+  , "scale": 4
+  , "gpu_ids": [0]
+
+  , "datasets": {
+      "test": {
+        "name": "test_NTIRE"
+        , "mode": "LRHR"
+        // , "dataroot_HR": "F:/ImageSuperResolution/Supervised/code/valYDiv2K"
+        // , "dataroot_LR": "F:/ImageSuperResolution/Supervised/code/valXDiv2K"
+        , "dataroot_HR": "/home/manav/Desktop/ImageSR/ImageSR_Drive/imageSR/Datasets/RealSR/valY/"
+        , "dataroot_LR": "/home/manav/Desktop/ImageSR/ImageSR_Drive/imageSR/Datasets/RealSR/valX/"
+      }
+    }
+
+  , "path": {
+    // "root": "/root/Image-SuperResolution"
+    "root": "/home/manav/Desktop/ImageSR/Image-SuperResolution/"
+    , "resume_state": "/home/manav/Desktop/ImageSR/ImageSR_Drive/Models/L1Loss(MoreWeighted)+GANLoss/training_state/1500.state"
+    , "pretrain_model_G": "/home/manav/Desktop/ImageSR/ImageSR_Drive/Models/L1Loss(MoreWeighted)+GANLoss/models/1500_G.pth"
+    , "pretrain_model_D": "/home/manav/Desktop/ImageSR/ImageSR_Drive/Models/L1Loss(MoreWeighted)+GANLoss/models/1500_D.pth"
+  }
+
+  , "network_G": {
+    "which_model_G": "SRGAN_Gen" // RRDB_net | sr_resnet | SRGANGen
+    , "norm_type": null
+    , "mode": "CNA"
+    , "nf": 32
+    , "nb": 32
+    , "in_nc": 3
+    , "out_nc": 3
+  }
+  , "network_D": {
+    "which_model_D": "discriminator_SRGAN"
+    , "norm_type": "batch"
+    , "act_type": "leakyrelu"
+    , "mode": "CNA"
+    , "nf": 32
+    , "in_nc": 3
+  }
+
+  , "train": {
+    "lr_G": 1e-5
+    , "weight_decay_G": 0
+    , "beta1_G": 0.9
+    , "lr_D": 1e-5
+    , "weight_decay_D": 0
+    , "beta1_D": 0.9
+    , "lr_scheme": "MultiStepLR"
+    , "lr_steps": [250, 500, 750, 1000, 1200, 1500]
+    , "lr_gamma": 0.5
+
+    , "pixel_criterion": "l1"
+    , "pixel_weight": 0
+    , "feature_criterion": "l2"
+    , "feature_weight": 3e-2
+    , "gan_type": "tripletgan"
+    , "gan_weight": 1e-1
+
+    , "manual_seed": 0
+    , "niter": 500000
+    , "val_freq": 250
+  }
+
+  , "logger": {
+    "print_freq": 50
+    , "save_checkpoint_freq": 500
+  }
+}

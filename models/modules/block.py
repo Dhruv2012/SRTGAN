@@ -4,7 +4,7 @@ import torch.nn as nn
 from scipy.signal import gaussian
 import numpy as np
 import functools
-import kornia
+# import kornia
 
 ####################
 # Basic blocks
@@ -237,7 +237,6 @@ class VGGGAPQualifierwave(nn.Module):
         # 16,12,128
         B4 = VGG_Block(base_nf*4,base_nf*8,norm_type=norm_type,act_type=act_type)
         # 8,6,1024
-        # B5 = VGG_Block(base_nf*8,base_nf*16,norm_type=norm_type,act_type=act_type)
         
         self.feature1 = sequential(B11,B12,B13,B14)
         self.feature2 = sequential(B21,B22,B23,B24)
@@ -255,7 +254,6 @@ class VGGGAPQualifierwave(nn.Module):
         # 64,48,32
         B113 = VGG_Block(base_nf,base_nf*2,norm_type=norm_type,act_type=act_type)
         # 32,24,64
-        # B14 = VGG_Block(base_nf*2,base_nf*2,norm_type=norm_type,act_type=act_type)
         # # 32,24,64
 
         # 256,192,9
@@ -265,7 +263,6 @@ class VGGGAPQualifierwave(nn.Module):
         # 64,48,32
         B123 = VGG_Block(base_nf,base_nf*2,norm_type=norm_type,act_type=act_type)
         # 32,24,64
-        # B14 = VGG_Block(base_nf*2,base_nf*2,norm_type=norm_type,act_type=act_type)
         # # 32,24,64
 
 
@@ -273,7 +270,6 @@ class VGGGAPQualifierwave(nn.Module):
         # 16,12,128
         B14 = VGG_Block(base_nf*4,base_nf*16,norm_type=norm_type,act_type=act_type)
         # 8,6,512
-        # B5 = VGG_Block(base_nf*8,base_nf*16,norm_type=norm_type,act_type=act_type)
         
         self.feature11 = sequential(B111,B112,B113)
         self.feature12 = sequential(B121,B122,B123)
@@ -322,12 +318,6 @@ class ResNetBlock(nn.Module):
             norm_type, act_type, mode)
         conv2 = conv_block(in_nc, out_nc, kernel_size, stride, dilation, groups, bias, pad_type, \
             norm_type, act_type, mode)
-        # if in_nc != out_nc:
-        #     self.project = conv_block(in_nc, out_nc, 1, stride, dilation, 1, bias, pad_type, \
-        #         None, None)
-        #     print('Need a projecter in ResNetBlock.')
-        # else:
-        #     self.project = lambda x:x
         self.res_path1 = sequential(conv0, conv1)
         self.res_path2 = sequential(conv2)
         self.res_scale = res_scale
@@ -359,13 +349,7 @@ class ResNetBlockcanny(nn.Module):
         
         conv2 = conv_block(1, out_nc, kernel_size, stride, dilation, groups, bias, pad_type, \
             norm_type, act_type, mode)
-        # if in_nc != out_nc:
-        #     self.project = conv_block(in_nc, out_nc, 1, stride, dilation, 1, bias, pad_type, \
-        #         None, None)
-        #     print('Need a projecter in ResNetBlock.')
-        # else:
-        #     self.project = lambda x:x
-
+        
         canny_block = CannyFilter()
         self.res_path1 = sequential(conv0, conv1)
         self.res_path2 = sequential(canny_block, conv2)
@@ -445,7 +429,6 @@ class CannyFilter(nn.Module):
 
     def forward(self, imgn):
         batch_size = imgn.shape[0]
-        #print(batch_size)
         img = imgn.clone()
         img_r = img[:,0:1]
         img_g = img[:,1:2]
@@ -471,8 +454,6 @@ class CannyFilter(nn.Module):
         # COMPUTE THICK EDGES
 
         grad_mag = torch.sqrt(grad_x_r**2 + grad_y_r**2)+ torch.sqrt(grad_x_g**2 + grad_y_g**2)+ torch.sqrt(grad_x_b**2 + grad_y_b**2)
-        #grad_mag = grad_mag + torch.sqrt(grad_x_g**2 + grad_y_g**2)
-        #grad_mag = grad_mag + torch.sqrt(grad_x_b**2 + grad_y_b**2)
         grad_orientation = (torch.atan2(grad_y_r+grad_y_g+grad_y_b, grad_x_r+grad_x_g+grad_x_b) * (180.0/3.14159))
         grad_orientation += 180.0
         grad_orientation =  torch.round( grad_orientation / 45.0 ) * 45.0
@@ -488,13 +469,9 @@ class CannyFilter(nn.Module):
         width = inidices_positive.size()[3]
         pixel_count = height * width
         pixel_range = torch.FloatTensor([range(pixel_count)])
-        #print(pixel_range.shape)
         
         inidices_positive = torch.squeeze(inidices_positive)
-        #print(inidices_positive.data.shape)
-        #print(inidices_negative.view(1,-1).shape)
-        #print(pixel_range.repeat(1,batch_size).shape)
-
+        
         if self.use_cuda:
             pixel_range = torch.cuda.FloatTensor([range(pixel_count)])
 
@@ -520,7 +497,6 @@ class CannyFilter(nn.Module):
         early_threshold[grad_mag<self.threshold] = 0.0
 
         assert grad_mag.size() == grad_orientation.size() == thin_edges.size() == thresholded.size() == early_threshold.size()
-        #print(thresholded.shape)
         return thresholded
 
     

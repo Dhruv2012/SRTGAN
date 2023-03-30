@@ -27,13 +27,10 @@ class NTIRE_model(BaseModel):
         # define networks and load pretrained models
         self.netG = networks.define_G1(opt).to(self.device)  # G1
         if self.is_train:
-            # self.netV = networks.define_D(opt).to(self.device)  # G1
-            #self.netD, self.edge_score_layer = networks.define_patchD(opt=opt)
             self.netD = networks.define_D2(opt=opt)
             self.netD = self.netD.to(self.device)
             self.netQ = networks.define_Q(opt).to(self.device)
             self.netG.train()
-            # self.netV.train()
             self.netD.train()
         self.load()  # load G and D if needed
 
@@ -48,7 +45,6 @@ class NTIRE_model(BaseModel):
                     self.cri_pix = nn.MSELoss().to(self.device)
                 else:
                     raise NotImplementedError('Loss type [{:s}] not recognized.'.format(l_pix_type))
-                #self.l_pix_w = train_opt['pixel_weight']
             else:
                 logger.info('Remove pixel loss.')
                 self.cri_pix = None
@@ -93,10 +89,6 @@ class NTIRE_model(BaseModel):
                 weight_decay=wd_D, betas=(train_opt['beta1_D'], 0.999))
             self.optimizers.append(self.optimizer_D)
 
-            # self.optimizer_V = torch.optim.Adam(self.netV.parameters(), lr=train_opt['lr_D'], \
-            #     weight_decay=wd_D, betas=(train_opt['beta1_D'], 0.999))
-            # self.optimizers.append(self.optimizer_V)
-
             # schedulers
             if train_opt['lr_scheme'] == 'MultiStepLR':
                 for optimizer in self.optimizers:
@@ -120,7 +112,6 @@ class NTIRE_model(BaseModel):
         divFactor = [[224,64],[112,128],[56,256],[28,512]]
         self.percepLossInfo = []
         for i in range(len(HRFeatures)):
-            #maxVal = max(HRFeatures[i], SRFeatures[i])
             scaledHRFeatures = torch.div(HRFeatures[i], divFactor[i][0] * divFactor[i][0] * divFactor[i][1])
             scaledSRFeatures = torch.div(SRFeatures[i], divFactor[i][0] * divFactor[i][0] * divFactor[i][1])
             l2norm = self.cri_fea(scaledHRFeatures, scaledSRFeatures)
@@ -146,7 +137,6 @@ class NTIRE_model(BaseModel):
                l_g_pix = self.l_pix_w * self.cri_pix(self.SR, self.var_H)
                l_g_total += l_g_pix
 
-            #l_g_percep = self.l_fea_w * self.cri_fea(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
             l_g_percep = self.l_fea_w * self.calculatePercepLoss(self.netF(self.var_H.detach()), self.netF(self.SR.detach()))
             l_g_total += l_g_percep
 
@@ -168,10 +158,6 @@ class NTIRE_model(BaseModel):
         
         l_d_total = 0
 
-        #g1 = self.l_gan_w * self.cri_gan(self.relLR_D, False)# disc = (1-HR_D*edgeHR)^2 + SR_D^2*edgeSR 
-        #g2 = self.l_gan_w * self.cri_gan(self.relHR_D, True)
-        #l_d_total += (g1 + g2)*0.5
-    
         l_d_total = self.l_gan_w * self.cri_gan((self.SR_D, self.LR_D, self.HR_D), 1)
         l_d_total = 1*l_d_total
 
@@ -199,9 +185,6 @@ class NTIRE_model(BaseModel):
         with torch.no_grad():
             n1 = torch.nn.Upsample(scale_factor=1/4)
             self.SR = self.netG(n1(self.var_L))
-            # self.HR_D = self.netD(self.var_H.detach())
-            # self.LR_D = self.netD(self.var_L.detach())
-            # self.SR_D = self.netD(self.SR.detach())
         self.netG.train()
 
     def get_current_log(self):
@@ -246,12 +229,8 @@ class NTIRE_model(BaseModel):
         if self.opt['is_train'] and load_path_D is not None:
             logger.info('Loading pretrained model for D [{:s}] ...'.format(load_path_D))
             self.load_network(load_path_D, self.netD)
-        # load_path_Q = "/home/kalpesh/SuperResolution_Abhinav_Dhruv/code/code/latest_G.pth"
-        # logger.info('Loading pretrained model for Q [{:s}] ...'.format(load_path_Q))
-        # self.load_network(load_path_Q, self.netQ)
-    
+        
 
     def save(self, iter_step):
         self.save_network(self.netG, 'G', iter_step)
         self.save_network(self.netD, 'D', iter_step)
-        # self.save_network(self.netV, 'V', iter_step)

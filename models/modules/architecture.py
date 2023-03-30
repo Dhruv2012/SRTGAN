@@ -4,7 +4,6 @@ import torch.nn as nn
 import torchvision
 from . import block as B
 from . import spectral_norm as SN
-from . import dbpn
 import functools
 from torchvision import models
 ####################
@@ -71,41 +70,6 @@ class RRDBNet(nn.Module):
         # x = self.skip(x)
         return x
         
-class RRDBNet2(nn.Module):
-    def __init__(self, in_nc, out_nc, nf, nb, gc=32, upscale=4, norm_type=None, \
-            act_type='leakyrelu', mode='CNA', upsample_mode='upconv'):
-        super(RRDBNet2, self).__init__()
-        n_upscale = int(math.log(upscale, 2))
-        ks=5
-        fea_conv = B.conv_block(in_nc, nf, kernel_size=ks, norm_type=None, act_type=None)
-        rb_blocks = [B.RRDB(nf, kernel_size=ks, gc=32, stride=1, bias=True, pad_type='zero', \
-            norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(int(nb*0.5))]
-        rb_blocks2 = [B.RRDB(nf, kernel_size=ks-2, gc=32, stride=1, bias=True, pad_type='zero', \
-            norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(int(nb*0.5))]
-
-        LR_conv = B.conv_block(nf, nf, kernel_size=1, norm_type=norm_type, act_type=None, mode=mode)
-
-        if upsample_mode == 'upconv':
-            upsample_block = B.upconv_blcok
-        elif upsample_mode == 'pixelshuffle':
-            upsample_block = B.pixelshuffle_block
-        else:
-            raise NotImplementedError('upsample mode [{:s}] is not found'.format(upsample_mode))
-        if upscale == 3:
-            upsampler = upsample_block(nf, nf, 3, act_type=act_type)
-        else:
-            upsampler = [upsample_block(nf, nf, act_type=act_type) for _ in range(n_upscale)]
-        HR_conv0 = B.conv_block(nf, nf, kernel_size=3, norm_type=None, act_type=act_type)
-        HR_conv1 = B.conv_block(nf, out_nc, kernel_size=3, norm_type=None, act_type=None)
-
-        self.model = B.sequential(fea_conv, B.ShortcutBlock(B.sequential(*rb_blocks,*rb_blocks2, LR_conv)),\
-            *upsampler, HR_conv0, HR_conv1)
-        self.ups = torch.nn.Upsample(scale_factor = 4, mode = 'bicubic')
-
-    def forward(self, x):
-        x = self.model(x) + self.ups(x)
-        return x
-
 class DegNet(nn.Module):
     def __init__(self, in_nc, out_nc, nf, nb, gc=32, upscale=4, norm_type=None, \
             act_type='leakyrelu', mode='CNA', upsample_mode='upconv'):

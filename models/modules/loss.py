@@ -6,10 +6,6 @@ import torch.nn as nn
 class GANLoss(nn.Module):
     def __init__(self, gan_type, real_label_val=1.0, fake_label_val=0.0):
         
-        # def TripletLoss(self, anchor, positive, negative):
-        #     loss = nn.MSELoss(anchor, positive) - nn.MSELoss(anchor, negative) + 1
-        #     loss = max(loss,0)
-        #     return loss 
         super(GANLoss, self).__init__()
         self.gan_type = gan_type.lower()
         self.real_label_val = real_label_val
@@ -81,8 +77,6 @@ class TripletLoss(nn.Module):
     def forward(self, input, target_label):
         anchor, positive, negative = input
         loss = self.mseloss(anchor, positive) - self.mseloss(anchor, negative) + 1
-        # loss = self.sigmoid(self.mseloss(anchor, positive)) - self.sigmoid(self.mseloss(anchor, negative)) + 1
-        # loss = torch.max(loss, 0)
         return loss 
 
 
